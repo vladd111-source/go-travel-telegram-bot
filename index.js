@@ -52,33 +52,38 @@ bot.onText(/^\/sendall (.+)/, async (msg, match) => {
   const messageToSend = match[1];
   console.log("📤 Рассылка запущена админом. Текст:", messageToSend);
 
-  const { data, error } = await supabase.from('bot_logs').select('telegram_id');
+  try {
+    const { data, error } = await supabase.from('bot_logs').select('telegram_id');
 
-  if (error) {
-    console.error("❌ Ошибка Supabase при получении пользователей:", error);
-    return bot.sendMessage(msg.chat.id, "⚠️ Ошибка при получении пользователей.");
-  }
-
-  if (!data || data.length === 0) {
-    console.warn("📭 Нет пользователей для рассылки.");
-    return bot.sendMessage(msg.chat.id, "📭 Нет пользователей для рассылки.");
-  }
-
-  const ids = [...new Set(data.map(row => row.telegram_id))];
-  let success = 0;
-
-  for (const id of ids) {
-    try {
-      await bot.sendMessage(id, messageToSend);
-      success++;
-      await new Promise(res => setTimeout(res, 200));
-    } catch (err) {
-      console.warn(`⚠️ Ошибка отправки ${id}:`, err.message);
+    if (error) {
+      console.error("❌ Ошибка Supabase при получении пользователей:", error);
+      return bot.sendMessage(msg.chat.id, "⚠️ Ошибка при получении пользователей. Проверь RLS и таблицу bot_logs.");
     }
-  }
 
-  console.log(`✅ Рассылка завершена. Отправлено: ${success}`);
-  bot.sendMessage(msg.chat.id, `✅ Рассылка завершена. Отправлено: ${success}`);
+    if (!data || data.length === 0) {
+      console.warn("📭 Нет пользователей для рассылки.");
+      return bot.sendMessage(msg.chat.id, "📭 Нет пользователей для рассылки.");
+    }
+
+    const ids = [...new Set(data.map(row => row.telegram_id))];
+    let success = 0;
+
+    for (const id of ids) {
+      try {
+        await bot.sendMessage(id, messageToSend);
+        success++;
+        await new Promise(res => setTimeout(res, 200));
+      } catch (err) {
+        console.warn(`⚠️ Ошибка отправки ${id}:`, err.message);
+      }
+    }
+
+    console.log(`✅ Рассылка завершена. Отправлено: ${success}`);
+    bot.sendMessage(msg.chat.id, `✅ Рассылка завершена. Отправлено: ${success}`);
+  } catch (e) {
+    console.error("❌ Фатальная ошибка при рассылке:", e);
+    bot.sendMessage(msg.chat.id, "🚫 Фатальная ошибка при выполнении рассылки.");
+  }
 });
 
 console.log("🚀 Go Travel Bot запущен и слушает /start и /sendall...");
