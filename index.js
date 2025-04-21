@@ -12,7 +12,7 @@ const supabase = createClient(
 const token = process.env.BOT_TOKEN;
 const bot = new TelegramBot(token, { polling: true });
 
-const ADMIN_ID = 507697302; // 👈 Замени на свой Telegram ID
+const ADMIN_ID = 5625134095; // 👈 Замени на свой Telegram ID
 
 // ✅ Установка описания бота
 bot.setMyDescription("🌍 Go Travel — ищи билеты, отели и места через Telegram WebApp ✈️")
