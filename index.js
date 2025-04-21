@@ -15,11 +15,6 @@ const bot = new TelegramBot(token, { polling: true });
 // 🔐 Админ ID
 const ADMIN_ID = 5625134095;
 
-// ✅ Установка описания бота
-bot.setMyDescription("🌍 Go Travel — ищи билеты, отели и места через Telegram WebApp ✈️")
-  .then(() => console.log("✅ Описание бота обновлено"))
-  .catch(err => console.error("❌ Ошибка при обновлении описания:", err));
-
 // 🔘 /start — приветствие + логирование
 bot.onText(/\/start/, async (msg) => {
   const { id, username, first_name } = msg.from;
