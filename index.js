@@ -24,14 +24,18 @@ bot.setMyDescription("🌍 Go Travel — ищи билеты, отели и ме
 bot.onText(/\/start/, async (msg) => {
   const { id, username, first_name } = msg.from;
 
-  // логируем пользователя в Supabase
-  await supabase.from('bot_logs').insert({
+  const { error } = await supabase.from('bot_logs').insert({
     telegram_id: id,
     username,
     first_name
   });
 
-  // отправляем WebApp
+  if (error) {
+    console.error("❌ Ошибка при логировании в Supabase:", error);
+  } else {
+    console.log(`✅ Пользователь добавлен: ${id} (${username || 'без username'})`);
+  }
+
   bot.sendMessage(msg.chat.id, 'Открыть Go Travel WebApp 🌍', {
     reply_markup: {
       inline_keyboard: [[
@@ -51,11 +55,18 @@ bot.onText(/^\/sendall (.+)/, async (msg, match) => {
   }
 
   const messageToSend = match[1];
+  console.log("📤 Рассылка запущена админом. Текст:", messageToSend);
+
   const { data, error } = await supabase.from('bot_logs').select('telegram_id');
 
   if (error) {
-    console.error("❌ Ошибка Supabase:", error);
+    console.error("❌ Ошибка Supabase при получении пользователей:", error);
     return bot.sendMessage(msg.chat.id, "⚠️ Ошибка при получении пользователей.");
+  }
+
+  if (!data || data.length === 0) {
+    console.warn("📭 Нет пользователей для рассылки.");
+    return bot.sendMessage(msg.chat.id, "📭 Нет пользователей для рассылки.");
   }
 
   const ids = [...new Set(data.map(row => row.telegram_id))];
@@ -67,10 +78,11 @@ bot.onText(/^\/sendall (.+)/, async (msg, match) => {
       success++;
       await new Promise(res => setTimeout(res, 200));
     } catch (err) {
-      console.warn(`⚠️ Не удалось отправить ${id}:`, err.message);
+      console.warn(`⚠️ Ошибка отправки ${id}:`, err.message);
     }
   }
 
+  console.log(`✅ Рассылка завершена. Отправлено: ${success}`);
   bot.sendMessage(msg.chat.id, `✅ Рассылка завершена. Отправлено: ${success}`);
 });
 
