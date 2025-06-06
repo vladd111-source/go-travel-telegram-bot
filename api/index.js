@@ -1,6 +1,5 @@
-require('dotenv').config();
-const TelegramBot = require('node-telegram-bot-api');
-const { createClient } = require('@supabase/supabase-js');
+import TelegramBot from "node-telegram-bot-api";
+import { createClient } from "@supabase/supabase-js";
 
 // Supabase init
 const supabase = createClient(
@@ -8,83 +7,80 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
-// Telegram init (без polling!)
-const token = process.env.BOT_TOKEN;
-const bot = new TelegramBot(token);
-bot.setWebHook(`${process.env.WEBHOOK_URL}/api`); // 👈 важно
+// Telegram init
+const bot = new TelegramBot(process.env.BOT_TOKEN);
 
 // 🔐 Админ ID
 const ADMIN_ID = 5625134095;
 
-// 🔘 /start — логирование + кнопка
-bot.onText(/\/start/, async (msg) => {
-  const { id, username, first_name } = msg.from;
-
-  const { error } = await supabase.from('bot_users').insert({
-    telegram_id: id,
-    username,
-    first_name
-  });
-
-  if (error) {
-    console.error("❌ Ошибка при логировании в Supabase:", error);
-  } else {
-    console.log(`✅ Пользователь добавлен: ${id} (${username || 'без username'})`);
+// 🎯 Основной webhook handler
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).send("Method Not Allowed");
   }
 
-  bot.sendMessage(msg.chat.id, 'Открыть Go Travel WebApp 🌍', {
-    reply_markup: {
+  const { message } = req.body;
+
+  if (!message || !message.text) {
+    return res.status(200).send("No message content");
+  }
+
+  const chatId = message.chat.id;
+  const userId = message.from.id;
+  const username = message.from.username || "";
+  const firstName = message.from.first_name || "";
+  const text = message.text;
+
+  if (text === "/start") {
+    await supabase.from("bot_users").insert({
+      telegram_id: userId,
+      username,
+      first_name: firstName,
+    });
+
+    await sendMessage(chatId, "Открыть Go Travel WebApp 🌍", {
       inline_keyboard: [[
         {
-          text: '🚀 Запустить',
-          web_app: { url: 'https://go-travel-frontend.vercel.app' }
+          text: "🚀 Запустить",
+          web_app: { url: "https://go-travel-frontend.vercel.app" },
+        },
+      ]],
+    });
+  }
+
+  if (text.startsWith("/sendall") && userId === ADMIN_ID) {
+    const msg = text.replace("/sendall", "").trim();
+    const { data } = await supabase.from("bot_users").select("telegram_id");
+
+    if (data?.length) {
+      for (const row of data) {
+        try {
+          await sendMessage(row.telegram_id, msg);
+          await new Promise(res => setTimeout(res, 200)); // антифлуд
+        } catch (err) {
+          console.warn("❌ Не удалось отправить:", err.message);
         }
-      ]]
-    }
-  });
-});
-
-// 💌 /sendall — рассылка
-bot.onText(/^\/sendall (.+)/, async (msg, match) => {
-  if (msg.from.id !== ADMIN_ID) {
-    return bot.sendMessage(msg.chat.id, "🚫 У тебя нет доступа к рассылке.");
-  }
-
-  const messageToSend = match[1];
-  console.log("📤 Рассылка запущена админом. Текст:", messageToSend);
-
-  try {
-    const { data, error } = await supabase
-      .from('bot_users')
-      .select('telegram_id');
-
-    if (error) {
-      console.error("❌ Ошибка Supabase:", error);
-      return bot.sendMessage(msg.chat.id, "⚠️ Ошибка при получении пользователей.");
-    }
-
-    if (!data || data.length === 0) {
-      return bot.sendMessage(msg.chat.id, "📭 Нет пользователей для рассылки.");
-    }
-
-    const ids = [...new Set(data.map(row => row.telegram_id))];
-    let success = 0;
-
-    for (const id of ids) {
-      try {
-        await bot.sendMessage(id, messageToSend);
-        success++;
-        await new Promise(res => setTimeout(res, 200));
-      } catch (err) {
-        console.warn(`⚠️ Ошибка отправки ${id}:`, err.message);
       }
+
+      await sendMessage(chatId, "✅ Рассылка завершена.");
     }
-
-    bot.sendMessage(msg.chat.id, `✅ Рассылка завершена. Отправлено: ${success}`);
-  } catch (e) {
-    console.error("❌ Фатальная ошибка:", e);
-    bot.sendMessage(msg.chat.id, "🚫 Фатальная ошибка при рассылке.");
   }
-});
 
-console.log("🚀 Go Travel Bot запущен через Webhook");
+  res.status(200).send("ok");
+}
+
+// 👇 Утилита для отправки сообщения
+async function sendMessage(chatId, text, reply_markup = null) {
+  const payload = {
+    chat_id: chatId,
+    text,
+    parse_mode: "HTML",
+    ...(reply_markup && { reply_markup }),
+  };
+
+  await fetch(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
