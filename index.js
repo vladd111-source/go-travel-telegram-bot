@@ -19,11 +19,11 @@ const ADMIN_ID = 5625134095;
 bot.onText(/\/start/, async (msg) => {
   const { id, username, first_name } = msg.from;
 
-  const { error } = await supabase.from('bot_logs').insert({
-    telegram_id: id,
-    username,
-    first_name
-  });
+  await supabase.from('bot_users').insert({
+  telegram_id: id,
+  username,
+  first_name
+});
 
   if (error) {
     console.error("❌ Ошибка при логировании в Supabase:", error);
