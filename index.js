@@ -8,14 +8,15 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
-// Telegram init
+// Telegram init (без polling!)
 const token = process.env.BOT_TOKEN;
-const bot = new TelegramBot(token, { polling: true });
+const bot = new TelegramBot(token);
+bot.setWebHook(`${process.env.WEBHOOK_URL}/api`); // 👈 важно
 
 // 🔐 Админ ID
 const ADMIN_ID = 5625134095;
 
-// 🔘 /start — приветствие + логирование
+// 🔘 /start — логирование + кнопка
 bot.onText(/\/start/, async (msg) => {
   const { id, username, first_name } = msg.from;
 
@@ -54,16 +55,15 @@ bot.onText(/^\/sendall (.+)/, async (msg, match) => {
 
   try {
     const { data, error } = await supabase
-      .from('bot_users') // ⬅️ новая таблица
+      .from('bot_users')
       .select('telegram_id');
 
     if (error) {
-      console.error("❌ Ошибка Supabase при получении пользователей:", error);
-      return bot.sendMessage(msg.chat.id, "⚠️ Ошибка при получении пользователей. Проверь RLS и таблицу bot_users.");
+      console.error("❌ Ошибка Supabase:", error);
+      return bot.sendMessage(msg.chat.id, "⚠️ Ошибка при получении пользователей.");
     }
 
     if (!data || data.length === 0) {
-      console.warn("📭 Нет пользователей для рассылки.");
       return bot.sendMessage(msg.chat.id, "📭 Нет пользователей для рассылки.");
     }
 
@@ -74,18 +74,17 @@ bot.onText(/^\/sendall (.+)/, async (msg, match) => {
       try {
         await bot.sendMessage(id, messageToSend);
         success++;
-        await new Promise(res => setTimeout(res, 200)); // ⏱ антифлуд
+        await new Promise(res => setTimeout(res, 200));
       } catch (err) {
         console.warn(`⚠️ Ошибка отправки ${id}:`, err.message);
       }
     }
 
-    console.log(`✅ Рассылка завершена. Отправлено: ${success}`);
     bot.sendMessage(msg.chat.id, `✅ Рассылка завершена. Отправлено: ${success}`);
   } catch (e) {
-    console.error("❌ Фатальная ошибка при рассылке:", e);
-    bot.sendMessage(msg.chat.id, "🚫 Фатальная ошибка при выполнении рассылки.");
+    console.error("❌ Фатальная ошибка:", e);
+    bot.sendMessage(msg.chat.id, "🚫 Фатальная ошибка при рассылке.");
   }
 });
 
-console.log("🚀 Go Travel Bot запущен и слушает /start и /sendall...");
+console.log("🚀 Go Travel Bot запущен через Webhook");
