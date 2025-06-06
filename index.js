@@ -19,7 +19,7 @@ const ADMIN_ID = 5625134095;
 bot.onText(/\/start/, async (msg) => {
   const { id, username, first_name } = msg.from;
 
-  const { error } = await supabase.from('bot_logs').insert({
+  const { error } = await supabase.from('bot_users').insert({
     telegram_id: id,
     username,
     first_name
@@ -53,11 +53,11 @@ bot.onText(/^\/sendall (.+)/, async (msg, match) => {
   console.log("📤 Рассылка запущена админом. Текст:", messageToSend);
 
   try {
-    const { data, error } = await supabase.from('bot_logs').select('telegram_id');
+    const { data, error } = await supabase.from('bot_users').select('telegram_id');
 
     if (error) {
       console.error("❌ Ошибка Supabase при получении пользователей:", error);
-      return bot.sendMessage(msg.chat.id, "⚠️ Ошибка при получении пользователей. Проверь RLS и таблицу bot_logs.");
+      return bot.sendMessage(msg.chat.id, "⚠️ Ошибка при получении пользователей. Проверь RLS и таблицу bot_users.");
     }
 
     if (!data || data.length === 0) {
