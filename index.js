@@ -28,7 +28,7 @@ bot.onText(/\/start/, async (msg) => {
   if (error) {
     console.error("❌ Ошибка при логировании в Supabase:", error);
   } else {
-    console.log(✅ Пользователь добавлен: ${id} (${username || 'без username'}));
+    console.log(`✅ Пользователь добавлен: ${id} (${username || 'без username'})`);
   }
 
   bot.sendMessage(msg.chat.id, 'Открыть Go Travel WebApp 🌍', {
@@ -74,12 +74,12 @@ bot.onText(/^\/sendall (.+)/, async (msg, match) => {
         success++;
         await new Promise(res => setTimeout(res, 200));
       } catch (err) {
-        console.warn(⚠️ Ошибка отправки ${id}:, err.message);
+        console.warn(`⚠️ Ошибка отправки ${id}:`, err.message);
       }
     }
 
-    console.log(✅ Рассылка завершена. Отправлено: ${success});
-    bot.sendMessage(msg.chat.id, ✅ Рассылка завершена. Отправлено: ${success});
+    console.log(`✅ Рассылка завершена. Отправлено: ${success}`);
+    bot.sendMessage(msg.chat.id, `✅ Рассылка завершена. Отправлено: ${success}`);
   } catch (e) {
     console.error("❌ Фатальная ошибка при рассылке:", e);
     bot.sendMessage(msg.chat.id, "🚫 Фатальная ошибка при выполнении рассылки.");
