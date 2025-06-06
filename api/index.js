@@ -1,4 +1,3 @@
-import TelegramBot from "node-telegram-bot-api";
 import { createClient } from "@supabase/supabase-js";
 
 // Supabase init
@@ -7,20 +6,15 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
-// Telegram init
-const bot = new TelegramBot(process.env.BOT_TOKEN);
-
-// 🔐 Админ ID
 const ADMIN_ID = 5625134095;
 
-// 🎯 Webhook handler
+// Webhook handler
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).send("Method Not Allowed");
   }
 
   const { message } = req.body;
-
   if (!message || !message.text) {
     return res.status(200).send("No message content");
   }
@@ -31,7 +25,7 @@ export default async function handler(req, res) {
   const firstName = message.from.first_name || "";
   const text = message.text.trim();
 
-  // 🔘 Команда /start
+  // 👉 /start
   if (text === "/start") {
     const { error } = await supabase.from("bot_users").insert({
       telegram_id: userId,
@@ -40,9 +34,9 @@ export default async function handler(req, res) {
     });
 
     if (error) {
-      console.error("❌ Ошибка Supabase при вставке:", error.message);
+      console.error("❌ Supabase insert error:", error.message);
     } else {
-      console.log(`✅ Зарегистрирован: ${firstName} (${username || "без username"})`);
+      console.log(`✅ Пользователь зарегистрирован: ${firstName} (${username || "без username"})`);
     }
 
     await sendMessage(chatId, "Открыть Go Travel WebApp 🌍", {
@@ -50,14 +44,14 @@ export default async function handler(req, res) {
         {
           text: "🚀 Запустить",
           web_app: { url: "https://go-travel-frontend.vercel.app" },
-        }
+        },
       ]]
     });
 
     return res.status(200).send("start handled");
   }
 
-  // 💌 Команда /sendall
+  // 👉 /sendall
   if (text.startsWith("/sendall") && userId === ADMIN_ID) {
     const msg = text.replace("/sendall", "").trim();
 
@@ -69,9 +63,9 @@ export default async function handler(req, res) {
     const { data, error } = await supabase.from("bot_users").select("telegram_id");
 
     if (error) {
-      console.error("❌ Ошибка Supabase при чтении:", error.message);
-      await sendMessage(chatId, "🚫 Ошибка чтения пользователей.");
-      return res.status(200).send("read error");
+      console.error("❌ Supabase read error:", error.message);
+      await sendMessage(chatId, "🚫 Ошибка при получении пользователей.");
+      return res.status(200).send("supabase error");
     }
 
     if (!data?.length) {
@@ -80,25 +74,24 @@ export default async function handler(req, res) {
     }
 
     let success = 0;
-
     for (const row of data) {
       try {
         await sendMessage(row.telegram_id, msg);
-        await new Promise(res => setTimeout(res, 200));
+        await new Promise(res => setTimeout(res, 200)); // антифлуд
         success++;
       } catch (err) {
-        console.warn(`⚠️ Ошибка при отправке ${row.telegram_id}:`, err.message);
+        console.warn(`⚠️ Ошибка отправки ${row.telegram_id}:`, err.message);
       }
     }
 
-    await sendMessage(chatId, `✅ Рассылка завершена. Отправлено: ${success}`);
+    await sendMessage(chatId, `✅ Рассылка завершена. Успешно: ${success}`);
     return res.status(200).send("sendall done");
   }
 
   return res.status(200).send("ok");
 }
 
-// 📤 Утилита для отправки сообщений
+// Отправка сообщения
 async function sendMessage(chatId, text, reply_markup = null) {
   const payload = {
     chat_id: chatId,
@@ -114,6 +107,6 @@ async function sendMessage(chatId, text, reply_markup = null) {
       body: JSON.stringify(payload),
     });
   } catch (err) {
-    console.error("❌ Ошибка при отправке сообщения:", err.message);
+    console.error("❌ Ошибка отправки сообщения:", err.message);
   }
 }
