@@ -1,6 +1,13 @@
 {
-  "type": "module",
+  "name": "go-travel-bot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
   "dependencies": {
+    "dotenv": "^16.3.1",
+    "node-telegram-bot-api": "^0.61.0",
     "@supabase/supabase-js": "^2.39.7"
   }
 }
