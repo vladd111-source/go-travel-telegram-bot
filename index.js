@@ -53,11 +53,13 @@ bot.onText(/^\/sendall (.+)/, async (msg, match) => {
   console.log("📤 Рассылка запущена админом. Текст:", messageToSend);
 
   try {
-    const { data, error } = await supabase.from('bot_logs').select('telegram_id');
+    const { data, error } = await supabase
+      .from('bot_users') // ⬅️ новая таблица
+      .select('telegram_id');
 
     if (error) {
       console.error("❌ Ошибка Supabase при получении пользователей:", error);
-      return bot.sendMessage(msg.chat.id, "⚠️ Ошибка при получении пользователей. Проверь RLS и таблицу bot_logs.");
+      return bot.sendMessage(msg.chat.id, "⚠️ Ошибка при получении пользователей. Проверь RLS и таблицу bot_users.");
     }
 
     if (!data || data.length === 0) {
@@ -72,7 +74,7 @@ bot.onText(/^\/sendall (.+)/, async (msg, match) => {
       try {
         await bot.sendMessage(id, messageToSend);
         success++;
-        await new Promise(res => setTimeout(res, 200));
+        await new Promise(res => setTimeout(res, 200)); // ⏱ антифлуд
       } catch (err) {
         console.warn(`⚠️ Ошибка отправки ${id}:`, err.message);
       }
