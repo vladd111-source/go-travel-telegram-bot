@@ -14,7 +14,7 @@ const message = "🌍 Привет! У нас новые билеты и оте�
 
 // Главная функция
 async function broadcast() {
-  const { data, error } = await supabase.from('bot_logs').select('telegram_id');
+  const { data, error } = await supabase.from('bot_users').select('telegram_id');
 
   if (error) {
     console.error("❌ Ошибка при получении пользователей из Supabase:", error);
