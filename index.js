@@ -10,7 +10,7 @@ const supabase = createClient(
 
 // Telegram init
 const token = process.env.BOT_TOKEN;
-const bot = new TelegramBot(token); ✅
+const bot = new TelegramBot(token);
 
 // 🔐 Админ ID
 const ADMIN_ID = 5625134095;
