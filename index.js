@@ -86,8 +86,12 @@ bot.onText(/^\/sendall (.+)/, async (msg, match) => {
   }
 });
 
-// ❓ /help — часто задаваемые вопросы и поддержка
 bot.onText(/\/help/, async (msg) => {
+  const chatId = msg.chat.id;
+  const userId = msg.from.id;
+  const username = msg.from.username || "без username";
+  const firstName = msg.from.first_name || "";
+
   const helpText = `
 <b>❓ Поддержка Go Travel</b>
 
@@ -99,9 +103,19 @@ bot.onText(/\/help/, async (msg) => {
 💬 Напиши свой вопрос — и мы ответим как можно скорее.
   `;
 
-  bot.sendMessage(msg.chat.id, helpText.trim(), {
-    parse_mode: "HTML"
+  await bot.sendMessage(chatId, helpText.trim(), {
+    parse_mode: "HTML",
+    reply_markup: {
+      inline_keyboard: [[
+        {
+          text: "📨 Написать менеджеру",
+          url: `https://t.me/Parshin_Alex?start=${userId}` // 👈 передаём userId
+        }
+      ]]
+    }
   });
+
+  console.log(`🆘 Пользователь запросил помощь: ${firstName} (@${username}) [${userId}]`);
 });
 
 console.log("🚀 Go Travel Bot запущен и слушает /start и /sendall...");
